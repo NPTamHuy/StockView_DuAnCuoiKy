@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private final int UPDATE_TIME = 60000;
 
     private double UsdVndRate = 25450.0;
+    private java.util.Map<String, String> changeMap = new java.util.HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,20 +151,38 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateStock(String symbol, String priceUsd) {
-        double priceVnd = Double.parseDouble(priceUsd) * UsdVndRate;
+        double rawPriceUsd = Double.parseDouble(priceUsd);
+        double priceVndNow = rawPriceUsd * UsdVndRate;
+
         DecimalFormat formatter = new DecimalFormat("#,###");
-        final String formattedPrice = formatter.format(priceVnd) + " đ";
+        final String formattedPrice = formatter.format(priceVndNow) + " đ";
 
         boolean exists = false;
         for (Stock item : stockList) {
             if (item.getSymbol().equalsIgnoreCase(symbol)) {
+                double oldPrice = item.getLastPrice();
+
+                Log.d("API_CHECK", symbol + " New: " + String.format("%.2f", priceVndNow) + " | Old: " + String.format("%.2f", oldPrice));
+
+                if (oldPrice > 0) {
+                    double diff = priceVndNow - oldPrice;
+                    double percent = (diff / oldPrice) * 100;
+
+                    DecimalFormat df = new DecimalFormat("0.000");
+
+                    String sign = percent > 0 ? "+" : "";
+                    item.setChangeText(sign + df.format(percent) + "%");
+                }
+
                 item.setPrice(formattedPrice);
+                item.setLastPrice(priceVndNow);
                 exists = true;
                 break;
             }
         }
+
         if (!exists) {
-            stockList.add(new Stock(symbol, formattedPrice));
+            stockList.add(new Stock(symbol, formattedPrice, priceVndNow));
         }
 
         runOnUiThread(new Runnable() {
@@ -173,7 +192,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
     private void addStock() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Add New Stock");
