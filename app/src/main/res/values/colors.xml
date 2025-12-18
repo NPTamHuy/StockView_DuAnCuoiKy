@@ -2,4 +2,9 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="header">#264773</color>
+    <color name="button">#9FC131</color>
+
+    <color name="stock_up">#00C076</color>
+    <color name="stock_down">#FF4D4D</color>
 </resources>
