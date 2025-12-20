@@ -1,11 +1,9 @@
 package com.example.stockview;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
@@ -38,12 +36,14 @@ public class MainActivity extends AppCompatActivity {
     private StockAdapter adapter;
     private List<Stock> stockList;
     private List<String> symbolsToTrack;
+    private View searchLayout;
+    private EditText etStockInput;
+    private Button btnConfirm;
+    private boolean isAddMode = true;
     private Handler handler = new Handler();
     private Runnable updateRunnable;
     private final int UPDATE_TIME = 60000;
-
     private double UsdVndRate = 25450.0;
-    private java.util.Map<String, String> changeMap = new java.util.HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,21 +61,82 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        symbolsToTrack = new ArrayList<>();
-        symbolsToTrack.add("BTC");
-        symbolsToTrack.add("ETH");
+        searchLayout = findViewById(R.id.search_layout);
+        etStockInput = findViewById(R.id.et_stock_input);
+        btnConfirm = findViewById(R.id.btn_confirm_add);
+        ImageButton searchButton = findViewById(R.id.search_button);
+        ImageButton addButton = findViewById(R.id.add_button);
+
+        symbolsToTrack = FileFL.loadWatchlist(this);
+        if (symbolsToTrack.isEmpty()) {
+            symbolsToTrack.add("BTC");
+            symbolsToTrack.add("ETH");
+            FileFL.saveWatchlist(this, symbolsToTrack);
+        }
 
         initRecyclerView();
 
-        ImageButton addButton = findViewById(R.id.add_button);
-        addButton.setOnClickListener(new View.OnClickListener() {
+        View.OnClickListener toggleSearchListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                addStock();
+                if (searchLayout.getVisibility() == View.GONE) {
+                    searchLayout.setVisibility(View.VISIBLE);
+                    etStockInput.requestFocus();
+                    if (v.getId() == R.id.add_button) {
+                        isAddMode = true;
+                        btnConfirm.setText("THÊM");
+                        etStockInput.setHint("Nhập mã mới (BTC, ETH...)");
+                    } else {
+                        isAddMode = false;
+                        btnConfirm.setText("TÌM");
+                        etStockInput.setHint("Tìm trong danh sách...");
+                    }
+                } else {
+                    searchLayout.setVisibility(View.GONE);
+                    etStockInput.setText("");
+                    adapter = new StockAdapter(stockList);
+                    recyclerView.setAdapter(adapter);
+                }
+            }
+        };
+
+        searchButton.setOnClickListener(toggleSearchListener);
+        addButton.setOnClickListener(toggleSearchListener);
+
+        btnConfirm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String symbol = etStockInput.getText().toString().toUpperCase().trim();
+                if (symbol.isEmpty()) return;
+
+                if (isAddMode) {
+                    if (!symbolsToTrack.contains(symbol)) {
+                        symbolsToTrack.add(symbol);
+                        FileFL.saveWatchlist(MainActivity.this, symbolsToTrack);
+                        layGiaTriMoiAll();
+                        searchLayout.setVisibility(View.GONE);
+                        etStockInput.setText("");
+                    } else {
+                        etStockInput.setError("Mã này đã có!");
+                    }
+                } else {
+                    filterStockList(symbol);
+                }
             }
         });
 
         autoUpdate();
+    }
+
+    private void filterStockList(String query) {
+        List<Stock> filteredList = new ArrayList<>();
+        for (Stock s : stockList) {
+            if (s.getSymbol().contains(query)) {
+                filteredList.add(s);
+            }
+        }
+        adapter = new StockAdapter(filteredList);
+        recyclerView.setAdapter(adapter);
     }
 
     private void initRecyclerView() {
@@ -91,14 +152,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 currUsdVndRate();
-
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         layGiaTriMoiAll();
                     }
                 }, 2000);
-
                 handler.postDelayed(this, UPDATE_TIME);
             }
         };
@@ -114,7 +173,6 @@ public class MainActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             String rateStr = response.body().getExchangeData().getPrice();
                             UsdVndRate = Double.parseDouble(rateStr);
-                            Log.d("API_RATE", "New rate: " + UsdVndRate);
                         }
                     }
                     @Override public void onFailure(Call<ExchangeResponse> call, Throwable t) {}
@@ -130,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     layGiaTriMoi(apiService, symbol);
                 }
-            }, i * 1500);
+            }, i * 1500); // Tránh rate limit 5 req/min
         }
     }
 
@@ -151,38 +209,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateStock(String symbol, String priceUsd) {
-        double rawPriceUsd = Double.parseDouble(priceUsd);
-        double priceVndNow = rawPriceUsd * UsdVndRate;
-
+        double rawPriceNow = Double.parseDouble(priceUsd) * UsdVndRate;
         DecimalFormat formatter = new DecimalFormat("#,###");
-        final String formattedPrice = formatter.format(priceVndNow) + " đ";
+        final String formattedPrice = formatter.format(rawPriceNow) + " đ";
 
         boolean exists = false;
         for (Stock item : stockList) {
             if (item.getSymbol().equalsIgnoreCase(symbol)) {
                 double oldPrice = item.getLastPrice();
-
-                Log.d("API_CHECK", symbol + " New: " + String.format("%.2f", priceVndNow) + " | Old: " + String.format("%.2f", oldPrice));
-
                 if (oldPrice > 0) {
-                    double diff = priceVndNow - oldPrice;
-                    double percent = (diff / oldPrice) * 100;
-
+                    double percent = ((rawPriceNow - oldPrice) / oldPrice) * 100;
                     DecimalFormat df = new DecimalFormat("0.000");
-
                     String sign = percent > 0 ? "+" : "";
                     item.setChangeText(sign + df.format(percent) + "%");
                 }
-
                 item.setPrice(formattedPrice);
-                item.setLastPrice(priceVndNow);
+                item.setLastPrice(rawPriceNow);
                 exists = true;
                 break;
             }
         }
 
         if (!exists) {
-            stockList.add(new Stock(symbol, formattedPrice, priceVndNow));
+            stockList.add(new Stock(symbol, formattedPrice, rawPriceNow));
         }
 
         runOnUiThread(new Runnable() {
@@ -191,26 +240,6 @@ public class MainActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
             }
         });
-    }
-    private void addStock() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Add New Stock");
-        final EditText input = new EditText(this);
-        input.setHint("Enter Symbol (BTC, ETH, etc.)");
-        builder.setView(input);
-
-        builder.setPositiveButton("Add", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                String symbol = input.getText().toString().toUpperCase().trim();
-                if (!symbol.isEmpty() && !symbolsToTrack.contains(symbol)) {
-                    symbolsToTrack.add(symbol);
-                    layGiaTriMoiAll();
-                }
-            }
-        });
-        builder.setNegativeButton("Cancel", null);
-        builder.show();
     }
 
     @Override
