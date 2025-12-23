@@ -13,7 +13,6 @@ import java.util.List;
 public class FileFL {
     private static final String FILE_NAME = "watchlist.json";
 
-    // Hàm ghi danh sách vào file JSON
     public static void saveWatchlist(Context context, List<String> symbols) {
         Gson gson = new Gson();
         String jsonString = gson.toJson(symbols);
@@ -24,7 +23,6 @@ public class FileFL {
         }
     }
 
-    // Hàm đọc danh sách từ file JSON
     public static List<String> loadWatchlist(Context context) {
         try (FileInputStream fis = context.openFileInput(FILE_NAME);
              InputStreamReader isr = new InputStreamReader(fis)) {
@@ -32,7 +30,7 @@ public class FileFL {
             Type type = new TypeToken<ArrayList<String>>() {}.getType();
             return gson.fromJson(isr, type);
         } catch (Exception e) {
-            return new ArrayList<>(); // Nếu chưa có file thì trả về danh sách rỗng
+            return new ArrayList<>();
         }
     }
 }
