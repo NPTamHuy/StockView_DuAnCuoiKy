@@ -3,11 +3,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+    android:id="@+id/main_watchlist"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
-    tools:context=".MainActivity">
+    android:background="#121212">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header_container"
@@ -19,59 +18,34 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <ImageView
-            android:id="@+id/logo_image"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.52"
-            app:srcCompat="@drawable/image_removebg_preview__1_" />
-
         <TextView
             android:id="@+id/app_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:text="StockView"
+            android:text="Danh mục theo dõi"
             android:textColor="#9FC131"
             android:textSize="20sp"
             android:textStyle="bold"
-            app:layout_constraintTop_toTopOf="@id/logo_image"
-            app:layout_constraintBottom_toBottomOf="@id/logo_image"
-            app:layout_constraintStart_toEndOf="@id/logo_image"/>
-
-        <ImageButton
-            android:id="@+id/add_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="#00000000"
-            app:tint="@color/button"
-            android:contentDescription="Add Stock"
-            android:scaleType="centerInside"
-            android:src="@android:drawable/ic_menu_add"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"/>
 
         <ImageButton
-            android:id="@+id/search_button"
+            android:id="@+id/search_button_watchlist"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginEnd="8dp"
             android:background="#00000000"
             app:tint="@color/button"
             android:scaleType="centerInside"
             android:src="@android:drawable/ic_menu_search"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/add_button"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/search_layout"
+        android:id="@+id/search_layout_watchlist"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="#252525"
@@ -82,59 +56,27 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <EditText
-            android:id="@+id/et_stock_input"
-            android:layout_width="0dp"
+            android:id="@+id/et_search_watchlist"
+            android:layout_width="match_parent"
             android:layout_height="45dp"
             android:background="@android:color/transparent"
-            android:hint="Nhập mã (BTC, ETH, FPT...)"
             android:textColor="#FFFFFF"
             android:textColorHint="#80FFFFFF"
             android:paddingStart="12dp"
-            android:imeOptions="actionDone"
             android:inputType="textCapCharacters"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/btn_confirm_add"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
-
-        <Button
-            android:id="@+id/btn_confirm_add"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="THÊM"
-            android:backgroundTint="#9FC131"
-            android:textColor="#121212"
-            android:textSize="12sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/main_content_container"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvWatchlistPage"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/search_layout"
-        app:layout_constraintBottom_toTopOf="@id/footer_container"
+        app:layout_constraintTop_toBottomOf="@id/search_layout_watchlist"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvWatchlist"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:clipToPadding="false"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            tools:listitem="@layout/activity_item_stock" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:listitem="@layout/activity_item_stock" />
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/footer_container"
         android:layout_width="0dp"
@@ -145,7 +87,7 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <ImageView
-            android:id="@+id/imageView2"
+            android:id="@+id/nav_home"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:srcCompat="@android:drawable/ic_dialog_dialer"
@@ -153,21 +95,19 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/imageView"
+            app:layout_constraintEnd_toStartOf="@+id/nav_watchlist"
             app:layout_constraintHorizontal_chainStyle="spread" />
 
         <ImageView
-            android:id="@+id/imageView"
+            android:id="@+id/nav_watchlist"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="#00000000"
             app:srcCompat="@android:drawable/ic_input_get"
-            app:tint="@color/button"
+            app:tint="#9FC131"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageView2"
+            app:layout_constraintStart_toEndOf="@+id/nav_home"
             app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>
