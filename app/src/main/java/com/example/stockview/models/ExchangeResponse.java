@@ -18,7 +18,6 @@ public class ExchangeResponse {
         @SerializedName("6. Last Refreshed")
         private String lastRefreshed;
 
-        // Getters
         public String getSymbol() { return symbol; }
         public String getPrice() { return price; }
         public String getLastRefreshed() { return lastRefreshed; }

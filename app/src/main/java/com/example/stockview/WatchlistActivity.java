@@ -181,6 +181,6 @@ public class WatchlistActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        handler.removeCallbacksAndMessages(null); // Tránh leak memory
+        handler.removeCallbacksAndMessages(null);
     }
 }

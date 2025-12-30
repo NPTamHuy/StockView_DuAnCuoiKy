@@ -34,19 +34,26 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    private RecyclerView recyclerView;
-    private StockAdapter adapter;
-    private List<Stock> stockList;
-    private List<String> symbolsToTrack;
-    private View searchLayout;
-    private EditText etStockInput;
-    private Button btnConfirm;
-    private boolean isAddMode = true;
-    private Handler handler = new Handler();
-    private Runnable updateRunnable;
-    private final int UPDATE_TIME = 60000;
-    private double UsdVndRate = 25450.0;
+    // --- Khai báo các thành phần giao diện và dữ liệu ---
+    private RecyclerView recyclerView; // Danh sách hiển thị các mã chứng khoán
+    private StockAdapter adapter;      // Bộ điều phối dữ liệu cho danh sách
+    private List<Stock> stockList;     // Danh sách đối tượng Stock để hiển thị
+    private List<String> symbolsToTrack; // Danh sách các ký hiệu mã (BTC, ETH...) nạp từ JSON
+    private View searchLayout;         // Vùng chứa thanh nhập liệu (ẩn/hiện)
+    private EditText etStockInput;     // Ô nhập mã chứng khoán mới hoặc tìm kiếm
+    private Button btnConfirm;         // Nút xác nhận Thêm hoặc Tìm
+    private boolean isAddMode = true;  // Cờ đánh dấu chế độ: True là Thêm mới, False là Tìm kiếm
 
+    // --- Khai báo công cụ cập nhật tự động ---
+    private Handler handler = new Handler(); // Công cụ điều phối các luồng chạy ngầm
+    private Runnable updateRunnable;         // Tác vụ lặp lại để cập nhật giá
+    private final int UPDATE_TIME = 60000;   // Khoảng thời gian tự động làm mới (60 giây)
+    private double UsdVndRate = 25450.0;    // Tỷ giá mặc định ban đầu
+
+    /**
+     * Hàm onCreate: Điểm khởi đầu khi chạy ứng dụng.
+     * Nhiệm vụ: Thiết lập giao diện, nạp dữ liệu từ tệp và chuẩn bị các sự kiện tương tác.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         initRecyclerView();
+
         ImageView navWatchlist = findViewById(R.id.imageView);
         navWatchlist.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -85,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
         View.OnClickListener toggleSearchListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -112,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
         searchButton.setOnClickListener(toggleSearchListener);
         addButton.setOnClickListener(toggleSearchListener);
 
+        // Xử lý sự kiện khi nhấn nút xác nhận (THÊM hoặc TÌM)
         btnConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -119,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 if (symbol.isEmpty()) return;
 
                 if (isAddMode) {
+                    // Chế độ THÊM: Kiểm tra trùng lặp, lưu vào JSON và lấy giá ngay
                     if (!symbolsToTrack.contains(symbol)) {
                         symbolsToTrack.add(symbol);
                         FileFL.saveWatchlist(MainActivity.this, symbolsToTrack);
@@ -129,6 +140,7 @@ public class MainActivity extends AppCompatActivity {
                         etStockInput.setError("Mã này đã có!");
                     }
                 } else {
+                    // Lọc danh sách hiện tại
                     filterStockList(symbol);
                 }
             }
@@ -137,6 +149,9 @@ public class MainActivity extends AppCompatActivity {
         autoUpdate();
     }
 
+    /**
+     * Hàm lọc danh sách hiển thị dựa trên từ khóa tìm kiếm.
+     */
     private void filterStockList(String query) {
         List<Stock> filteredList = new ArrayList<>();
         for (Stock s : stockList) {
@@ -148,6 +163,9 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
     }
 
+    /**
+     * Hàm cấu hình RecyclerView để hiển thị danh sách chứng khoán.
+     */
     private void initRecyclerView() {
         recyclerView = findViewById(R.id.rvWatchlist);
         stockList = new ArrayList<>();
@@ -156,15 +174,19 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
     }
 
+    /**
+     * Hàm tạo vòng lặp cập nhật dữ liệu tự động.
+     * Cơ chế: Lấy tỷ giá trước -> Chờ 2 giây -> Lấy giá chứng khoán -> Lặp lại sau 60 giây.
+     */
     private void autoUpdate() {
         updateRunnable = new Runnable() {
             @Override
             public void run() {
-                currUsdVndRate();
+                currUsdVndRate(); // Cập nhật tỷ giá mới nhất
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        layGiaTriMoiAll();
+                        layGiaTriMoiAll(); // Cập nhật giá các mã
                     }
                 }, 2000);
                 handler.postDelayed(this, UPDATE_TIME);
@@ -173,6 +195,9 @@ public class MainActivity extends AppCompatActivity {
         handler.post(updateRunnable);
     }
 
+    /**
+     * Hàm lấy tỷ giá USD sang VND hiện tại từ API.
+     */
     private void currUsdVndRate() {
         ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
         apiService.getExchangeRate("CURRENCY_EXCHANGE_RATE", "USD", "VND", "OUFBYE8GBPA336RI")
@@ -188,6 +213,9 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Hàm duyệt danh sách để lấy giá cho tất cả mã đang theo dõi.
+     */
     private void layGiaTriMoiAll() {
         ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
         for (int i = 0; i < symbolsToTrack.size(); i++) {
@@ -201,6 +229,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Hàm gọi API lấy giá cho một mã cụ thể.
+     */
     private void layGiaTriMoi(ApiService apiService, final String symbol) {
         apiService.getExchangeRate("CURRENCY_EXCHANGE_RATE", symbol, "USD", "OUFBYE8GBPA336RI")
                 .enqueue(new Callback<ExchangeResponse>() {
@@ -217,14 +248,20 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    /**
+     * Hàm xử lý logic tính toán tài chính và cập nhật giao diện.
+     * Nhiệm vụ: Tính tiền VND, tính % biến động, định dạng số và báo cho Adapter làm mới UI.
+     */
     private void updateStock(String symbol, String priceUsd) {
+        // Quy đổi từ USD sang VND
         double rawPriceNow = Double.parseDouble(priceUsd) * UsdVndRate;
-        DecimalFormat formatter = new DecimalFormat("#,###");
+        DecimalFormat formatter = new DecimalFormat("#,###"); // Định dạng ngăn cách hàng nghìn
         final String formattedPrice = formatter.format(rawPriceNow) + " đ";
 
         boolean exists = false;
         for (Stock item : stockList) {
             if (item.getSymbol().equalsIgnoreCase(symbol)) {
+                // Tính toán phần trăm tăng giảm dựa trên giá cũ
                 double oldPrice = item.getLastPrice();
                 if (oldPrice > 0) {
                     double percent = ((rawPriceNow - oldPrice) / oldPrice) * 100;
@@ -239,6 +276,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        // Nếu mã chưa có trong danh sách hiển thị thì thêm mới
         if (!exists) {
             stockList.add(new Stock(symbol, formattedPrice, rawPriceNow));
         }
@@ -251,6 +289,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Giải phóng tài nguyên khi Activity bị hủy để tránh lỗi rò rỉ bộ nhớ.
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
